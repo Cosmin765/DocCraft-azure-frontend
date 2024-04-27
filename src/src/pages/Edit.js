@@ -39,10 +39,11 @@ export default function Edit() {
     
     const handleEditDocument = () => {
         const fetchContent = async (filename) => {
-            try{
+            try {
+                console.log(`${GET_FILE_CONTENT}/${filename}`);
                 const response = await axios.get(`${GET_FILE_CONTENT}/${filename}`, {withCredentials: true});
                 return response;
-            }catch (error) {
+            } catch (error) {
                 console.error('Error:', error);
             }
         };
@@ -52,9 +53,7 @@ export default function Edit() {
         if (selectedFile !== '') {
             fetchContent(selectedFile)
                 .then(response => {
-                    const byteArray = response.data[0].data
-                    const stringContent = String.fromCharCode.apply(null, byteArray);
-                    console.log(stringContent);
+                    const stringContent = response.data;
                     setEditorStringContent(stringContent);
                     setSelectedFile(selectedFile);
                 })
