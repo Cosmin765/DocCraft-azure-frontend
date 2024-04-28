@@ -4,6 +4,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { parseCredentialsJWT } from '../utils';
 import { LOGIN_URL } from '../config';
+import { Cookies } from 'react-cookie';
 
 export default function MainPage() {
     const responseMessage = (response) => {
@@ -14,7 +15,8 @@ export default function MainPage() {
             return;
         }
 
-        axios.post(LOGIN_URL, null, {withCredentials: true}).catch(error => console.error('Error:', error));
+        const authToken = new Cookies(document.cookie).get('authToken');
+        axios.post(LOGIN_URL, null, {withCredentials: true, headers: {"Authorization" : `${authToken}`}}).catch(error => console.error('Error:', error));
 
         document.cookie = 'authToken=' + response.credential;
         document.location.href = '/home';

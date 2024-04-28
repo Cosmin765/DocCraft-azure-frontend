@@ -2,8 +2,6 @@ import { useState, useRef } from "react";
 import { Cookies } from 'react-cookie';
 import { parseCredentialsJWT } from '../utils';
 import EditComponent from "../components/EditComponent";
-import axios from 'axios';
-import {USERS_URL} from "../config"
 import ShareFileComponent from "../components/ShareFileComponent";
 export default function Create() {
     const [filename, setFilename] = useState('');

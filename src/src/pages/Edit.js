@@ -22,7 +22,8 @@ export default function Edit() {
     useEffect(() => {
         const fetchFiles = async () => {
             try {
-                const response = await axios.get(GET_FILES_URL, {withCredentials: true});
+                const authToken = new Cookies(document.cookie).get('authToken');
+                const response = await axios.get(GET_FILES_URL, {withCredentials: true, headers: {"Authorization" : `${authToken}`}});
                 if (response.status !== 200) {
                     throw new Error('Failed to fetch files');
                 }
@@ -41,7 +42,8 @@ export default function Edit() {
         const fetchContent = async (filename) => {
             try {
                 console.log(`${GET_FILE_CONTENT}/${filename}`);
-                const response = await axios.get(`${GET_FILE_CONTENT}/${filename}`, {withCredentials: true});
+                const authToken = new Cookies(document.cookie).get('authToken');
+                const response = await axios.get(`${GET_FILE_CONTENT}/${filename}`, {withCredentials: true, headers: {"Authorization" : `${authToken}`}});
                 return response;
             } catch (error) {
                 console.error('Error:', error);

@@ -51,9 +51,10 @@ export default function EditComponent({editorStringContent, filename, setShareab
 
                 const text = serializeToString(editorValue);
                 try {
+                    const authToken = new Cookies(document.cookie).get('authToken');
                     await axios.post(`${UPDATE_FILE_CONTENT}/${filename}`, {
                         content: text,
-                    }, {withCredentials: true});
+                    }, {withCredentials: true, headers: {"Authorization" : `${authToken}`}});
                 } catch (error) {
                     console.error('Error saving file:', error);
                 }

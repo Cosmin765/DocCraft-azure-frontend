@@ -4,6 +4,7 @@ import { Slate, Editable, withReact } from 'slate-react';
 import { createEditor } from 'slate';
 import EditComponent from '../components/EditComponent';
 import { GET_FILES_URL, TRANSLATE_URL } from '../config';
+import { Cookies } from 'react-cookie';
 
 
 export default function Translate() {
@@ -23,7 +24,8 @@ export default function Translate() {
     useEffect(() => {
         const fetchFiles = async () => {
             try {
-                const response = await axios.get(GET_FILES_URL, {withCredentials: true});
+                const authToken = new Cookies(document.cookie).get('authToken');
+                const response = await axios.get(GET_FILES_URL, {withCredentials: true, headers: {"Authorization" : `${authToken}`}});
                 if (response.status !== 200) {
                     throw new Error('Failed to fetch files');
                 }
@@ -47,9 +49,11 @@ export default function Translate() {
         const blobName = selectedFile
 
         try {
+            const authToken = new Cookies(document.cookie).get('authToken');
             const response = await axios.post(TRANSLATE_URL, null, {
                 withCredentials: true,
-                params: {blobName, sourceLanguage, targetLanguage}
+                params: {blobName, sourceLanguage, targetLanguage},
+                headers: {"Authorization" : `${authToken}`}
             });
             console.log("debug:")
             setToTranslate(response.data.textToTranslate);

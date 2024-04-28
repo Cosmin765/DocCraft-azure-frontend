@@ -3,13 +3,15 @@ import axios from "axios";
 import { useState, useRef } from "react";
 import "./ShareFileComponent.css";
 import { SET_PERMISSION_URL } from "../config";
+import { Cookies } from "react-cookie";
 export default function ShareFileComponent({file_name}){
     const [users, setUsers] = useState([]);
     const [selected, setSelected] = useState(false);
 
     const getUsers = async()=>{
         try {
-            const response = await axios.get(USERS_URL, {withCredentials: true});
+            const authToken = new Cookies(document.cookie).get('authToken');
+            const response = await axios.get(USERS_URL, {withCredentials: true, headers: {"Authorization" : `${authToken}`}});
             setUsers(response.data);
             
         } catch(error) {
@@ -57,7 +59,8 @@ export default function ShareFileComponent({file_name}){
 
             try {
                 const body = {emailTo: selectRef.current.value, permissionType:checkbox.current.value, filename: file_name };
-                const response = await axios.post(SET_PERMISSION_URL, body, {withCredentials: true});
+                const authToken = new Cookies(document.cookie).get('authToken');
+                const response = await axios.post(SET_PERMISSION_URL, body, {withCredentials: true, headers: {"Authorization" : `${authToken}`}});
             } catch (error) {
                 console.error(error);
             }
