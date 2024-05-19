@@ -5,13 +5,17 @@
   "dependencies": {
     "@azure/msal-react": "^2.0.15",
     "@firebase/auth": "^1.7.0",
+    "@fluidframework/azure-client": "^1.2.0",
+    "@fluidframework/test-client-utils": "^1.4.0",
     "@react-oauth/google": "^0.12.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.6.8",
     "bootstrap": "^5.3.3",
+    "dotenv": "^16.4.5",
     "firebase": "^10.10.0",
+    "fluid-framework": "^1.4.0",
     "jwt-decode": "^4.0.0",
     "react": "^18.2.0",
     "react-bootstrap": "^2.10.2",
@@ -20,6 +24,7 @@
     "react-router-dom": "^6.22.3",
     "react-scripts": "^5.0.1",
     "slate-react": "^0.102.0",
+    "uuid": "^9.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

@@ -4,14 +4,75 @@ import { Slate, Editable, withReact } from 'slate-react';
 import { createEditor, Node, Transforms } from 'slate';
 import axios from 'axios';
 import { Cookies } from 'react-cookie';
-import { parseCredentialsJWT } from '../utils';
 
+import { SharedMap } from "fluid-framework";
+import { AzureClient } from "@fluidframework/azure-client";
+import { InsecureTokenProvider } from "@fluidframework/test-client-utils";
+
+import { v4 as uuidv4 } from 'uuid';
+
+
+const user = uuidv4();
+
+const serviceConfig = {
+    connection: {
+        type: 'remote',
+        tenantId: process.env.REACT_APP_TENANT_ID,
+        tokenProvider: new InsecureTokenProvider(process.env.REACT_APP_PRIMARY_KEY, user),
+        endpoint: process.env.REACT_APP_ENDPOINT
+    }
+};
+
+const client = new AzureClient(serviceConfig);
+
+const containerSchema = {
+    initialObjects: { documentMap: SharedMap }
+};
+
+
+let container;
+
+
+async function handleFluidRelay(callback) {
+    let id;
+    if (window.location.hash) {
+        id = window.location.hash.substring(1);
+        container = (await client.getContainer(id, containerSchema)).container;
+    } else {
+        container = (await client.createContainer(containerSchema)).container;
+        id = await container.attach();
+        console.log(id);
+        window.location.hash = id;
+    }
+
+    container.initialObjects.documentMap.on("valueChanged", callback);
+}
 
 export default function EditComponent({editorStringContent, filename, setShareable}) {
     const [editor, setEditor] = useState(() => withReact(createEditor()))
     const editorRef = useRef(null)
+    const documentValueKey = filename;
 
     let editorValue = editorStringContent != null ? stringToEditorValue(editorStringContent) : [];
+
+
+    if (documentValueKey) {
+        handleFluidRelay(() => {
+            const documentValue = container.initialObjects.documentMap.get(documentValueKey);
+            // editorValue = documentValue;
+    
+            if (!editorRef.current) {
+                return;
+            }
+    
+            if (editorRef.current.value === documentValue) {
+                return;
+            }
+
+            console.log('Set', documentValue);
+            editorRef.current.value = documentValue;
+        });
+    }
 
     function stringToEditorValue(text) {
         const { insertText } = editor;
@@ -81,19 +142,35 @@ export default function EditComponent({editorStringContent, filename, setShareab
         overflowY: 'auto',
         textAlign: 'left'
     };
-console.log(editorValue);
+
+    const handleChange = e => {
+        if (!editorRef.current) {
+            return;
+        }
+
+        if (!container) {
+            return;
+        }
+
+        console.log('Send', e.target.value);
+        container.initialObjects.documentMap.set(documentValueKey, e.target.value);
+    }
+
     return (
-        <div style={editorValue.length > 0 ? editorStyles : {}}>
-            {editorValue.length >= 0 && (
-                <SlateWithRef
-                    editor={editor}
-                    initialValue={editorValue}
-                    value={editorValue}
-                    onChange={newValue => editorValue = newValue}
-                    ref={editorRef}
-                    >
-                    <Editable autoFocus={false} />
-                </SlateWithRef>
+        <div style={editorValue && editorValue.length > 0 ? editorStyles : {}}>
+            {editorValue && editorValue.length > 0 && (
+                <textarea value={editorStringContent} onChange={handleChange} ref={editorRef}>
+
+                </textarea>
+                // <SlateWithRef
+                //     editor={editor}
+                //     initialValue={editorValue}
+                //     value={editorValue}
+                //     onChange={handleChange}
+                //     ref={editorRef}
+                //     >
+                //     <Editable autoFocus={false} />
+                // </SlateWithRef>
             )}
             </div>
     );
