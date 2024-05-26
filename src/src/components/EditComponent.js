@@ -5,7 +5,7 @@ import { createEditor, Node, Transforms } from 'slate';
 import axios from 'axios';
 import { Cookies } from 'react-cookie';
 
-import { SharedMap } from "fluid-framework";
+import { SharedMap, SharedString } from "fluid-framework";
 import { AzureClient } from "@fluidframework/azure-client";
 import { InsecureTokenProvider } from "@fluidframework/test-client-utils";
 
@@ -24,9 +24,8 @@ const serviceConfig = {
 };
 
 const client = new AzureClient(serviceConfig);
-
 const containerSchema = {
-    initialObjects: { documentMap: SharedMap }
+    initialObjects: { documentString: SharedString  }
 };
 
 
@@ -45,32 +44,49 @@ async function handleFluidRelay(callback) {
         window.location.hash = id;
     }
 
-    container.initialObjects.documentMap.on("valueChanged", callback);
+    container.initialObjects.documentString.on("sequenceDelta", callback);
 }
 
 export default function EditComponent({editorStringContent, filename, setShareable}) {
     const [editor, setEditor] = useState(() => withReact(createEditor()))
     const editorRef = useRef(null)
     const documentValueKey = filename;
+    const [sessionId, setSessionId] = useState(uuidv4());
+
+
+    const [stringContentLocal, setStringContentLocal] = useState(editorStringContent || '');
 
     let editorValue = editorStringContent != null ? stringToEditorValue(editorStringContent) : [];
 
 
     if (documentValueKey) {
-        handleFluidRelay(() => {
-            const documentValue = container.initialObjects.documentMap.get(documentValueKey);
+        handleFluidRelay(({deltaOperation, isLocal} ) => {
+            const receivedChange = container.initialObjects.documentString.getText();
             // editorValue = documentValue;
+            console.log('deltaOperation', deltaOperation);
+            console.log('isLocal', isLocal);
+            console.log('Received', receivedChange);
+            // if (!editorRef.current) {
+            //     return;
+            // }
     
-            if (!editorRef.current) {
-                return;
-            }
-    
-            if (editorRef.current.value === documentValue) {
+            if (editorRef.current.value === receivedChange) {
                 return;
             }
 
-            console.log('Set', documentValue);
-            editorRef.current.value = documentValue;
+            // if(receivedChange.value === undefined) {
+            //     return;
+            // }
+
+            // if(receivedChange.id === sessionId){
+            //     console.log('Received own change');
+            //      return;
+            // }
+            // else{
+            //     console.log('Received change from another user');
+            // }
+            // console.log('Set', receivedChange.value);
+            // setStringContentLocal(receivedChange);
         });
     }
 
@@ -110,7 +126,8 @@ export default function EditComponent({editorStringContent, filename, setShareab
                     setShareable(true);
                 }
 
-                const text = serializeToString(editorValue);
+                // const text = serializeToString(editorValue);
+                const text = stringContentLocal;
                 try {
                     const authToken = new Cookies(document.cookie).get('authToken');
                     await axios.post(`${UPDATE_FILE_CONTENT}/${filename}`, {
@@ -149,17 +166,25 @@ export default function EditComponent({editorStringContent, filename, setShareab
         }
 
         if (!container) {
+            console.error('Container not initialized');
             return;
         }
 
+
         console.log('Send', e.target.value);
-        container.initialObjects.documentMap.set(documentValueKey, e.target.value);
+        console.log("e.target.value", e.target.value);
+
+        container.initialObjects.documentString.replaceText(0, container.initialObjects.documentString.getText().length, e.target.value);
+        // container.initialObjects.documentString.insertText(e.target.value);
+
+        setStringContentLocal(e.target.value);
+        container.initialObjects.documentString.off("sequenceDelta", () => {});
     }
 
     return (
         <div style={editorValue && editorValue.length > 0 ? editorStyles : {}}>
             {editorValue && editorValue.length > 0 && (
-                <textarea value={editorStringContent} onChange={handleChange} ref={editorRef}>
+                <textarea  rows="5" cols="33" value={stringContentLocal} onChange={handleChange} ref={editorRef}>
 
                 </textarea>
                 // <SlateWithRef
