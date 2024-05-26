@@ -41,7 +41,6 @@ export default function Edit() {
     const handleEditDocument = () => {
         const fetchContent = async (filename) => {
             try {
-                console.log(`${GET_FILE_CONTENT}/${filename}`);
                 const authToken = new Cookies(document.cookie).get('authToken');
                 const response = await axios.get(`${GET_FILE_CONTENT}/${filename}`, {withCredentials: true, headers: {"Authorization" : `${authToken}`}});
                 return response;
@@ -96,6 +95,7 @@ export default function Edit() {
             
             <EditComponent 
                 editorStringContent={editorStringContent} 
+                setEditorStringContent={setEditorStringContent}
                 filename={selectedFile}
             />
         </div>

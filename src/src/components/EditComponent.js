@@ -29,93 +29,79 @@ const containerSchema = {
 };
 
 
-let container;
+let container = null;
+let lastFilename = null;
+let containerId = null;
 
 
 async function handleFluidRelay(callback) {
-    let id;
     if (window.location.hash) {
-        id = window.location.hash.substring(1);
-        container = (await client.getContainer(id, containerSchema)).container;
+        containerId = window.location.hash.substring(1);
+        container = (await client.getContainer(containerId, containerSchema)).container;
     } else {
         container = (await client.createContainer(containerSchema)).container;
-        id = await container.attach();
-        console.log(id);
-        window.location.hash = id;
+        containerId = await container.attach();
+        window.location.hash = containerId;
     }
 
     container.initialObjects.documentString.on("sequenceDelta", callback);
 }
 
-export default function EditComponent({editorStringContent, filename, setShareable}) {
-    const [editor, setEditor] = useState(() => withReact(createEditor()))
+window.addEventListener('hashchange', e => {
+    const oldURL = e.oldURL;
+    const newURL = e.newURL;
+
+    const oldHash = oldURL.search('#') !== -1 ? oldURL.substring(oldURL.search('#') + 1) : '';
+    const newHash = newURL.search('#') !== -1 ? newURL.substring(newURL.search('#') + 1) : '';
+
+    if (!oldHash || !newHash || newHash === containerId) {
+        return;
+    }
+
+    window.location.reload();
+})
+
+export default function EditComponent({editorStringContent, setEditorStringContent, filename, setShareable}) {
+
     const editorRef = useRef(null)
-    const documentValueKey = filename;
-    const [sessionId, setSessionId] = useState(uuidv4());
 
+    setTimeout(() => {
+        if (filename !== lastFilename && container !== null) {
+            container.disconnect();
+            container = null;
+            window.location.hash = '';
+        }
 
-    const [stringContentLocal, setStringContentLocal] = useState(editorStringContent || '');
-
-    let editorValue = editorStringContent != null ? stringToEditorValue(editorStringContent) : [];
-
-
-    if (documentValueKey) {
-        handleFluidRelay(({deltaOperation, isLocal} ) => {
-            const receivedChange = container.initialObjects.documentString.getText();
-            // editorValue = documentValue;
-            console.log('deltaOperation', deltaOperation);
-            console.log('isLocal', isLocal);
-            console.log('Received', receivedChange);
-            // if (!editorRef.current) {
-            //     return;
-            // }
+        if (filename && filename !== lastFilename && container === null) {
+            handleFluidRelay(({deltaOperation, isLocal}) => {
+                const receivedChange = container.initialObjects.documentString.getText();
     
-            if (editorRef.current.value === receivedChange) {
-                return;
-            }
-
-            // if(receivedChange.value === undefined) {
-            //     return;
-            // }
-
-            // if(receivedChange.id === sessionId){
-            //     console.log('Received own change');
-            //      return;
-            // }
-            // else{
-            //     console.log('Received change from another user');
-            // }
-            // console.log('Set', receivedChange.value);
-            // setStringContentLocal(receivedChange);
-        });
-    }
-
-    function stringToEditorValue(text) {
-        const { insertText } = editor;
-        const value = [{ type: 'paragraph', children: [{ text: '' }] }];
-        Transforms.insertNodes(editor, value); // Insert initial paragraph
+                if (deltaOperation !== 1) {
+                    return;
+                }
     
-        const lines = text.split('\n');
+                if (!editorRef.current) {
+                    return;
+                }
     
-        lines.forEach((line, index) => {
-            if (index !== 0) {
-                insertText('\n'); // Insert line break
-            }
-            insertText(line);
-        });
+                if (isLocal) {
+                    return;
+                }
+        
+                if (editorRef.current.value === receivedChange) {
+                    return;
+                }
+               
+                setEditorStringContent(receivedChange);
+            });
+        }
+
+        if (filename !== lastFilename) {
+            lastFilename = filename;
+        }
+    }, 200);
+
     
-        return editor.children;
-    }
-
-    const SlateWithRef = React.forwardRef(({ children, ...props }, ref) => (
-        <Slate {...props}>
-            <div ref={ref}>{children}</div>
-        </Slate>
-    ));
-
-    const serializeToString = nodes => {
-        return nodes.map(n => Node.string(n)).join('\n')
-    }
 
     useEffect(() => {
         const handleSave = async (event) => {
@@ -126,8 +112,7 @@ export default function EditComponent({editorStringContent, filename, setShareab
                     setShareable(true);
                 }
 
-                // const text = serializeToString(editorValue);
-                const text = stringContentLocal;
+                const text = editorStringContent;
                 try {
                     const authToken = new Cookies(document.cookie).get('authToken');
                     await axios.post(`${UPDATE_FILE_CONTENT}/${filename}`, {
@@ -142,23 +127,7 @@ export default function EditComponent({editorStringContent, filename, setShareab
         document.addEventListener('keydown', handleSave);
 
         return () => document.removeEventListener('keydown', handleSave);
-    }, [editorValue, filename]);
-
-    useEffect(() => {
-        setEditor(() => withReact(createEditor()));
-    }, [editorStringContent]);
-
-    const editorStyles = {
-        width: '60%', 
-        marginTop: '10px',
-        minHeight: '300px', 
-        backgroundColor: '#f4f4f4', 
-        color: '#000000',
-        padding: '10px',
-        borderRadius: '5px', 
-        overflowY: 'auto',
-        textAlign: 'left'
-    };
+    }, [editorStringContent, filename]);
 
     const handleChange = e => {
         if (!editorRef.current) {
@@ -170,33 +139,34 @@ export default function EditComponent({editorStringContent, filename, setShareab
             return;
         }
 
-
-        console.log('Send', e.target.value);
-        console.log("e.target.value", e.target.value);
-
         container.initialObjects.documentString.replaceText(0, container.initialObjects.documentString.getText().length, e.target.value);
-        // container.initialObjects.documentString.insertText(e.target.value);
 
-        setStringContentLocal(e.target.value);
-        container.initialObjects.documentString.off("sequenceDelta", () => {});
+        setEditorStringContent(e.target.value);
     }
 
     return (
-        <div style={editorValue && editorValue.length > 0 ? editorStyles : {}}>
-            {editorValue && editorValue.length > 0 && (
-                <textarea  rows="5" cols="33" value={stringContentLocal} onChange={handleChange} ref={editorRef}>
-
-                </textarea>
-                // <SlateWithRef
-                //     editor={editor}
-                //     initialValue={editorValue}
-                //     value={editorValue}
-                //     onChange={handleChange}
-                //     ref={editorRef}
-                //     >
-                //     <Editable autoFocus={false} />
-                // </SlateWithRef>
+        <div style={editorStringContent !== null ? editorStyles : {}}>
+            {editorStringContent !== null && (
+                <textarea style={textAreaStyles} rows="20" cols="33" value={editorStringContent} onChange={handleChange} ref={editorRef}></textarea>
             )}
             </div>
     );
+}
+
+
+const editorStyles = {
+    width: '60%',
+    marginTop: '10px',
+    minHeight: '300px', 
+    backgroundColor: '#f4f4f4', 
+    color: '#000000',
+    padding: '10px',
+    borderRadius: '5px', 
+    overflowY: 'auto',
+    textAlign: 'left'
+};
+
+const textAreaStyles = {
+    width: '100%',
+    height: '100%'
 }

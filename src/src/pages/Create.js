@@ -40,7 +40,8 @@ export default function Create() {
             </div> 
             {shareable && <ShareFileComponent file_name={filename}/>}
             <EditComponent 
-                editorStringContent={editorStringContent} 
+                editorStringContent={editorStringContent}
+                setEditorStringContent={setEditorStringContent}
                 filename={filename}
                 setShareable={setShareable}
             />
