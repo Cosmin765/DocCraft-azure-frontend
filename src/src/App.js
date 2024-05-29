@@ -4,6 +4,7 @@ import Edit from './pages/Edit';
 import Home from './pages/Home';
 import MainPage from './pages/MainPage';
 import Translate from './pages/Translate';
+import Transcribe from './pages/Transcribe'
 import { Routes, Route } from "react-router-dom";
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
                 <Route path="/create" element={<Create />} />
                 <Route path="/edit" element={<Edit />} />
                 <Route path="/translate" element={<Translate />} />
+                <Route path="/transcribe" element={<Transcribe />} />
             </Routes>
         </div>
     );
