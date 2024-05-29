@@ -1,6 +1,6 @@
-const PRODUCTION = document.location.href.includes('azurewebsites.net');
+const PRODUCTION = document.location.href.includes('appspot');
 
-const BACKEND = PRODUCTION ? 'https://doccraft-backend.azurewebsites.net' : 'http://localhost:8083';
+const BACKEND = PRODUCTION ? 'https://cloud-419006.lm.r.appspot.com' : 'http://localhost:8083';
 
 // const GET_FILES_URL = BACKEND + '/files'
 const GET_FILES_URL = BACKEND + '/api/blobs';
