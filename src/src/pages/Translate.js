@@ -5,6 +5,7 @@ import { createEditor } from 'slate';
 import EditComponent from '../components/EditComponent';
 import { GET_FILES_URL, TRANSLATE_URL } from '../config';
 import { Cookies } from 'react-cookie';
+import { parseCredentialsJWT } from '../utils';
 
 
 export default function Translate() {
@@ -18,6 +19,9 @@ export default function Translate() {
     const [translatedText, setTranslatedText] = useState('');
 
     const selectRef = useRef(null);
+    const authToken = new Cookies(document.cookie).get('authToken');
+    if (!authToken) document.location.href = '/';
+    const {pfpUrl, name} = parseCredentialsJWT(authToken);
 
 
 
@@ -70,9 +74,13 @@ export default function Translate() {
 
     return (
         <div align='center' className='selector'>
-            <div style={{position: 'absolute', top: 5, right: 5, display: 'flex', alignItems: 'center'}}>
-                <img style={{width: 40}} />
-                <p style={{padding: '0 5px'}}>|</p>
+             <div className="taskbar" style={{justifyContent: 'space-between'}}>
+                <a href='/home'><img src='/logo.png' style={{height: '100%'}} alt='Logo' /></a>
+                <div style={{position: 'absolute', top: 5, right: 5, display: 'flex', alignItems: 'center'}}>
+                    <img src={pfpUrl} style={{width: 40}} />
+                    <p style={{padding: '0 5px'}}>|</p>
+                    <div style={{textAlign: 'right' ,color: 'white'}}>{name}</div>
+                </div>
             </div>
             <h1>Choose a file to Translate</h1>
 

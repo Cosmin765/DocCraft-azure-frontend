@@ -66,11 +66,15 @@ export default function Edit() {
 
     return (
         <div align='center' className='selector'>
-            <div style={{position: 'absolute', top: 5, right: 5, display: 'flex', alignItems: 'center'}}>
-                <img src={pfpUrl} style={{width: 40}} />
-                <p style={{padding: '0 5px'}}>|</p>
-                <div style={{textAlign: 'right' ,color: 'white'}}>{name}</div>
+             <div className="taskbar" style={{justifyContent: 'space-between'}}>
+                <a href='/home'><img src='/logo.png' style={{height: '100%'}} alt='Logo' /></a>
+                <div style={{position: 'absolute', top: 5, right: 5, display: 'flex', alignItems: 'center'}}>
+                    <img src={pfpUrl} style={{width: 40}} />
+                    <p style={{padding: '0 5px'}}>|</p>
+                    <div style={{textAlign: 'right' ,color: 'white'}}>{name}</div>
+                </div>
             </div>
+           
             <h1>Choose a file to Edit</h1>
 
             <select ref={selectRef} defaultValue={selectedFile}>
